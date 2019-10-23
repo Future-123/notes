@@ -1,0 +1,174 @@
+webpack的使用
+1、安装
+用win+R打开运行对话框，输入cmd进入命令行模式。然后找到你想开始项目的地方，输入下方代码：
+mkdir webpack_demo（建立一个文件夹）
+cd webpack_demo（进入所创建的文件）
+文件夹建立好后，可以通过下面命令安装WebPack。
+//全局安装（不推荐）
+npm install -g webpack
+如果你这时安装失败了（出现了报错信息），一般有三种可能：
+    ? 检查你node的版本号，如果版本号过低，升级为最新版本。
+    ? 网络问题，可以考虑使用cnpm来安装（这个是淘宝实时更新的镜像）,具体可以登录cnpm的官方网站学习http://npm.taobao.org/。
+    ? 权限问题，在Liux、Mac安装是需要权限，如果你是Windows系统，主要要使用以管理员方式安装。
+
+**注意：**全局安装是可以的，但是webpack官方是不推荐的。这会将您项目中的 webpack 锁定到指定版本，并且在使用不同的 webpack 版本的项目中，可能会导致构建失败。
+①对项目目录进行安装
+在用npm安装前，我们先要进行一下初始化，初始化的主要目的是生成package.json文件（这是一个标准的npm说明文件，里面蕴含了丰富的信息，包括当前项目的依赖模块，自定义的脚本任务等等，如果你对此文件还不了解，可以看看node 的相关知识）。
+在命令行输入：npm init
+
+②输入下面命令进行项目目录的安装： 
+npm install --save-dev webpack（--save是保存到package.json文件中，-dev是只在开发环境下使用，而生产环境中不使用；如果是更换版本：删除node_modules文件，再执行此命令，也可修改devDependencies中webpack版本号再安装）
+或者通过npm install webpack@1.2.x --save-dev  安装指定版本
+npm install webpack-cli --save-dev（4.0版本以上，还需执行此安装命令）
+③打包命令：
+webpack src/index.js（入口文件） -o dist/bundle.js（出口文件）
+打包会生成黄色是警告，黄色部分的警告的意思是，没有设置模式，有开发模式和生产模式两种
+新的打包命令：webpack src/index.js -o dist/bundle.js --mode development（开发环境打包）/production（生产模式打包）
+npm install -g live-server（安装live-server服务器）
+输入命令：live-server（点击dist文件可以看到项目运行）
+接下来，找到package.json，添加上”dev”和”build”这两个信息以及他们的值.
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "webpack-dev-server --open",
+    "build": "webpack –p"
+  },
+npm run dev运行
+2.配置文件：入口和出口
+webpack.config.js就是Webpack的配置文件，这个文件需要自己在项目根目录下手动建立。建立好后我们对其进行配置，先看下面的代码（webpack.config.js的基本结构），这是一个没有内容的标准webpack配置模版：
+const path=require("path")
+module.exports={
+  //入口文件的配置项
+  entry:{
+    entry:"./src/entry.js",
+    entry2:"./src/entry2.js"  //多个文件入口
+  },
+  mode:"development",  //指定为开发环境（默认生产环境）
+  //出口文件的配置项
+  output:{
+    path:path.resolve(__dirname,"dist"),  //dist文件在本机的绝对路径
+    //filename:'bundle.js'
+    filename:'[name].js'  //多个文件出口使用name
+  },
+  //模块：例如解读CSS,图片如何转换，压缩
+  module:{
+    rules:[]
+  },
+  //插件，用于生产模版和各项功能
+  plugins:[],
+  //配置webpack开发服务功能
+  devServer:{
+     
+  }
+}
+
+3、配置文件： 服务和热更新
+要执行webpack-dev-server是要先用：
+npm install webpack-dev-server –save-dev
+下载好后，需要配置一下devServer。最简单的devServer配置项只有四个。
+/webpack.config.js中：
+devServer:{
+        //设置基本目录结构
+        contentBase:path.resolve(__dirname,'dist'),
+        //服务器的IP地址，可以使用IP也可以使用localhost
+        host:'localhost',
+        //服务端压缩是否开启，一般都为开启
+        compress:true,
+        //配置服务端口号
+        port:1717
+    }
+启动服务器：npm run server 
+然后在浏览器地址栏输入http://localhost:1717就可以看到结果了。 
+4、模块：CSS文件打包
+CSS和引入做好后，我们就需要使用loader来解析CSS文件了，这里我们需要两个解析用的loader，分别是style-loader和css-loader。 
+npm install style-loader –save-dev（解析css到html时使用）
+npm install --save-dev css-loader（解压css时使用）
+loaders配置：
+修改webpack.config.js中module属性中的配置代码如下
+module:{
+        rules: [
+            {
+              test: /\.css$/,
+              use: [ 'style-loader', 'css-loader' ]  //从右往左执行，注意样式左边可能会被覆盖（use也可以写loader）
+            }
+          ]
+    },
+打包scss文件的时候需要sass-loader和解析用的node-sass
+npm install --save-dev sass-loader node-sass
+webpack.config.js中：
+module:{
+  rules: [
+    {
+      test: /\.(c|sc|sa)ss$/,
+      use: ['style-loader', {
+        loader: 'css-loader',
+        options: {
+          sourceMap: true   //页面检查可以找到样式来自哪里
+        }
+      }, {
+        loader: 'sass-loader',
+        options: {
+          sourceMap: true
+        }
+      }
+    }
+  ]    
+},
+5、自动处理CSS3属性前缀
+需要安装两个包postcss-loader 和autoprefixer（自动添加前缀的插件） 
+npm install --save-dev postcss-loader autoprefixer
+  module: {
+    rules: [{
+      test: /\.(c|sc|sa)ss$/,
+      use: ['style-loader', {
+          loader: 'css-loader',
+          options: {
+            sourceMap: true
+          }
+        },
+        {
+          loader: "postcss-loader",
+          options: {
+            ident: 'postcss',
+            sourceMap: true,
+            plugins: (loader) => [
+              require("autoprefixer")({
+                browsers: ['>0.15% in CN']   //大于IE8以上的版本
+              })
+            ]
+          }
+        },
+        {
+          loader: 'sass-loader',
+          options: {
+            sourceMap: true
+          }
+        }
+      ]
+    }]
+  },
+6、插件配置：配置JS压缩（生产环境使用）
+现在你写的JS代码，在上线之前，都是需要进行压缩的，在没有webpack和gulp这些工具前，你可能需要找一个压缩软件或者在线进行压缩，在Webpack中可以很轻松的实现JS代码的压缩，它是通过插件的方式实现的，这里我们就先来引入一个uglifyjs-webpack-plugin(JS压缩插件，简称uglify)。
+**注意：**虽然uglifyjs是插件，但是webpack版本里默认已经集成，不需要再次安装。
+引入：
+我们需要在webpack.config.js中引入uglifyjs-webpack-glugin插件，引入后在plugins配置里new一个 uglify对象就可以了，代码如下。
+const uglify = `require`('uglifyjs-webpack-plugin');
+plugins:[
+   new uglify()
+],
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
